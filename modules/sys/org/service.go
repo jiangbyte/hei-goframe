@@ -18,8 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var ctx = context.Background()
-
 // formatTime formats a *time.Time to a string in the "2006-01-02 15:04:05" layout.
 // Returns an empty string if t is nil.
 func formatTime(t *time.Time) string {
@@ -110,6 +108,7 @@ func getParentIDKey(parentID *string) string {
 
 // Page returns a paginated list of organizations.
 func Page(c *gin.Context, param *OrgPageParam) gin.H {
+	ctx := context.Background()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -154,6 +153,7 @@ func Page(c *gin.Context, param *OrgPageParam) gin.H {
 
 // Tree returns the organization tree structure.
 func Tree(c *gin.Context, param *OrgTreeParam) []map[string]interface{} {
+	ctx := context.Background()
 	query := db.Client.SysOrg.Query().Order(sysorg.BySortCode())
 	if param.Category != "" {
 		query = query.Where(sysorg.CategoryEQ(param.Category))
@@ -200,6 +200,7 @@ func Tree(c *gin.Context, param *OrgTreeParam) []map[string]interface{} {
 
 // Create creates a new organization.
 func Create(c *gin.Context, vo *OrgVO, userID string) {
+	ctx := context.Background()
 	now := time.Now()
 
 	builder := db.Client.SysOrg.Create().
@@ -235,6 +236,7 @@ func Create(c *gin.Context, vo *OrgVO, userID string) {
 
 // Modify updates an existing organization.
 func Modify(c *gin.Context, vo *OrgVO, userID string) {
+	ctx := context.Background()
 	if vo.ID == "" {
 		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
@@ -297,6 +299,7 @@ func Modify(c *gin.Context, vo *OrgVO, userID string) {
 // checkCircularParent panics if setting newParentID as the parent of entityID
 // would create a circular reference.
 func checkCircularParent(entityID, newParentID string) {
+	ctx := context.Background()
 	if newParentID == "" || newParentID == "0" || entityID == "" {
 		return
 	}
@@ -325,6 +328,7 @@ func checkCircularParent(entityID, newParentID string) {
 // collectDescendantOrgIDs gathers all IDs that are the given IDs or any of their
 // descendants recursively using DFS.
 func collectDescendantOrgIDs(ids []string) []string {
+	ctx := context.Background()
 	all, err := db.Client.SysOrg.Query().All(ctx)
 	if err != nil {
 		return ids
@@ -364,6 +368,7 @@ func collectDescendantOrgIDs(ids []string) []string {
 
 // Remove deletes organizations by IDs, including all descendants.
 func Remove(c *gin.Context, ids []string) {
+	ctx := context.Background()
 	if len(ids) == 0 {
 		return
 	}
@@ -412,6 +417,7 @@ func Remove(c *gin.Context, ids []string) {
 
 // Detail returns a single organization by ID.
 func Detail(c *gin.Context, id string) *OrgVO {
+	ctx := context.Background()
 	if id == "" {
 		return nil
 	}

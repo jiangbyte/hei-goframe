@@ -19,14 +19,13 @@ import (
 	"hei-gin/ent/gen/sysresource"
 )
 
-var ctx = context.Background()
-
 // ---------------------------------------------------------------------------
 // Module
 // ---------------------------------------------------------------------------
 
 // ModulePage returns a paginated list of modules.
 func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
+	ctx := context.Background()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -53,6 +52,7 @@ func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
 
 // ModuleDetail returns a single module by ID.
 func ModuleDetail(c *gin.Context, id string) *gen.SysModule {
+	ctx := context.Background()
 	entity, err := db.Client.SysModule.Get(ctx, id)
 	if err != nil {
 		if gen.IsNotFound(err) {
@@ -65,6 +65,7 @@ func ModuleDetail(c *gin.Context, id string) *gen.SysModule {
 
 // ModuleCreate creates a new module.
 func ModuleCreate(c *gin.Context, vo *ModuleVO, userID string) {
+	ctx := context.Background()
 	id := utils.GenerateID()
 	now := time.Now()
 
@@ -106,6 +107,7 @@ func ModuleCreate(c *gin.Context, vo *ModuleVO, userID string) {
 
 // ModuleModify updates an existing module.
 func ModuleModify(c *gin.Context, vo *ModuleVO, userID string) {
+	ctx := context.Background()
 	_, err := db.Client.SysModule.Get(ctx, vo.ID)
 	if err != nil {
 		if gen.IsNotFound(err) {
@@ -159,6 +161,7 @@ func ModuleModify(c *gin.Context, vo *ModuleVO, userID string) {
 
 // ModuleRemove deletes modules by the given ids.
 func ModuleRemove(c *gin.Context, ids []string) {
+	ctx := context.Background()
 	_, err := db.Client.SysModule.Delete().
 		Where(sysmodule.IDIn(ids...)).
 		Exec(ctx)
@@ -173,6 +176,7 @@ func ModuleRemove(c *gin.Context, ids []string) {
 
 // ResourcePage returns a paginated list of resources.
 func ResourcePage(c *gin.Context, param *ResourcePageParam) gin.H {
+	ctx := context.Background()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -199,6 +203,7 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) gin.H {
 
 // ResourceDetail returns a single resource by ID.
 func ResourceDetail(c *gin.Context, id string) *gen.SysResource {
+	ctx := context.Background()
 	entity, err := db.Client.SysResource.Get(ctx, id)
 	if err != nil {
 		if gen.IsNotFound(err) {
@@ -211,6 +216,7 @@ func ResourceDetail(c *gin.Context, id string) *gen.SysResource {
 
 // ResourceCreate creates a new resource.
 func ResourceCreate(c *gin.Context, vo *ResourceVO, userID string) {
+	ctx := context.Background()
 	id := utils.GenerateID()
 	now := time.Now()
 
@@ -281,6 +287,7 @@ func ResourceCreate(c *gin.Context, vo *ResourceVO, userID string) {
 // ResourceModify updates an existing resource, checking for circular parent
 // references and syncing RelRolePermission when extra.permission_code changes.
 func ResourceModify(c *gin.Context, vo *ResourceVO, userID string) {
+	ctx := context.Background()
 	entity, err := db.Client.SysResource.Get(ctx, vo.ID)
 	if err != nil {
 		if gen.IsNotFound(err) {
@@ -385,6 +392,7 @@ func ResourceModify(c *gin.Context, vo *ResourceVO, userID string) {
 // ResourceRemove deletes resources and all their descendants recursively,
 // cleaning up role-resource links.
 func ResourceRemove(c *gin.Context, ids []string) {
+	ctx := context.Background()
 	allIDs := collectDescendantIDs(ids)
 
 	_, err := db.Client.RelRoleResource.Delete().
@@ -404,6 +412,7 @@ func ResourceRemove(c *gin.Context, ids []string) {
 
 // ResourceTree returns the full resource tree starting from root nodes.
 func ResourceTree(c *gin.Context) []*ResourceVO {
+	ctx := context.Background()
 	all, err := db.Client.SysResource.Query().
 		Order(sysresource.BySortCode()).
 		All(ctx)
@@ -446,20 +455,9 @@ func ResourceTree(c *gin.Context) []*ResourceVO {
 // checkCircularParent checks if setting newParentID as the parent of entityID
 // would create a circular reference.
 func checkCircularParent(entityID, newParentID string) bool {
+	ctx := context.Background()
 	if newParentID == "" || newParentID == "0" || entityID == "" {
 		return false
-	}
-
-	all, err := db.Client.SysResource.Query().All(ctx)
-	if err != nil {
-		return false
-	}
-
-	parentMap := make(map[string]string, len(all))
-	for _, r := range all {
-		if r.ParentID != nil {
-			parentMap[r.ID] = *r.ParentID
-		}
 	}
 
 	current := newParentID
@@ -467,7 +465,14 @@ func checkCircularParent(entityID, newParentID string) bool {
 		if current == entityID {
 			return true
 		}
-		current = parentMap[current]
+		entity, err := db.Client.SysResource.Get(ctx, current)
+		if err != nil {
+			return false
+		}
+		if entity.ParentID == nil || *entity.ParentID == "" || *entity.ParentID == "0" {
+			break
+		}
+		current = *entity.ParentID
 	}
 	return false
 }
@@ -475,35 +480,34 @@ func checkCircularParent(entityID, newParentID string) bool {
 // collectDescendantIDs gathers all resource IDs that are the given IDs or
 // any of their descendants (recursive).
 func collectDescendantIDs(ids []string) []string {
-	all, err := db.Client.SysResource.Query().All(ctx)
-	if err != nil {
+	ctx := context.Background()
+	if len(ids) == 0 {
 		return ids
 	}
 
-	childrenMap := make(map[string][]string)
-	for _, r := range all {
-		pid := ""
-		if r.ParentID != nil {
-			pid = *r.ParentID
-		}
-		childrenMap[pid] = append(childrenMap[pid], r.ID)
-	}
-
-	allIDs := make(map[string]bool, len(ids))
+	allIDs := make(map[string]bool)
 	for _, id := range ids {
 		allIDs[id] = true
 	}
 
-	stack := make([]string, len(ids))
-	copy(stack, ids)
+	queue := make([]string, len(ids))
+	copy(queue, ids)
 
-	for len(stack) > 0 {
-		parentID := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		for _, childID := range childrenMap[parentID] {
-			if !allIDs[childID] {
-				allIDs[childID] = true
-				stack = append(stack, childID)
+	for len(queue) > 0 {
+		parentID := queue[len(queue)-1]
+		queue = queue[:len(queue)-1]
+
+		children, err := db.Client.SysResource.Query().
+			Where(sysresource.ParentID(parentID)).
+			All(ctx)
+		if err != nil {
+			continue
+		}
+
+		for _, child := range children {
+			if !allIDs[child.ID] {
+				allIDs[child.ID] = true
+				queue = append(queue, child.ID)
 			}
 		}
 	}
@@ -518,6 +522,7 @@ func collectDescendantIDs(ids []string) []string {
 // syncPermission compares old and new extra JSON for changes to
 // permission_code and updates RelRolePermission accordingly.
 func syncPermission(resourceID string, oldExtra, newExtra *string) {
+	ctx := context.Background()
 	oldCode := extractPermissionCode(oldExtra)
 	newCode := extractPermissionCode(newExtra)
 	if oldCode == newCode {

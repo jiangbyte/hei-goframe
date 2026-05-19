@@ -74,7 +74,13 @@ func NoRepeat(interval int) gin.HandlerFunc {
 				"time": nowMS,
 			})
 			if marshalErr == nil {
-				redisClient.SetEx(ctx, cacheKey, string(storeData), 3600*time.Second)
+				cacheTTL := interval / 1000 // convert ms to seconds
+				if cacheTTL < 60 {
+					cacheTTL = 60
+				} else if cacheTTL > 3600 {
+					cacheTTL = 3600
+				}
+				redisClient.SetEx(ctx, cacheKey, string(storeData), time.Duration(cacheTTL)*time.Second)
 			}
 		}
 

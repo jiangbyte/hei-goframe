@@ -17,8 +17,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var ctx = context.Background()
-
 // scanKeys uses Redis SCAN (cursor loop, 200 per batch) to find all keys matching pattern.
 func scanKeys(ctx context.Context, redis *redis.Client, pattern string) ([]string, error) {
 	var cursor uint64
@@ -39,6 +37,7 @@ func scanKeys(ctx context.Context, redis *redis.Client, pattern string) ([]strin
 
 // Analysis returns an overview analysis of all sessions (BUSINESS + CONSUMER).
 func Analysis(c *gin.Context) *SessionAnalysisResult {
+	ctx := context.Background()
 	bKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS+"*")
 	cKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
 
@@ -137,6 +136,7 @@ func countDaily(ctx context.Context, redis *redis.Client, sessionKeys []string, 
 
 // Page returns a paginated list of BUSINESS sessions as a full gin.H response (manual pagination).
 func Page(c *gin.Context, param *SessionPageParam) gin.H {
+	ctx := context.Background()
 	sessions, err := collectSessions(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS, constants.TOKEN_PREFIX_BUSINESS, param.Keyword)
 	if err != nil {
 		sessions = []*SessionPageResult{}
@@ -287,6 +287,7 @@ func Exit(c *gin.Context, userID string) {
 
 // TokenList returns all active tokens for a given user.
 func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
+	ctx := context.Background()
 	sessionKey := constants.SESSION_PREFIX_BUSINESS + userID
 	tokens, err := db.Redis.SMembers(ctx, sessionKey).Result()
 	if err != nil || len(tokens) == 0 {
@@ -336,6 +337,7 @@ func ExitToken(c *gin.Context, userID, token string) {
 
 // ChartData returns bar chart data (last 7 days daily new tokens) and pie chart data (B vs C total).
 func ChartData(c *gin.Context) *SessionChartData {
+	ctx := context.Background()
 	bKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS+"*")
 	cKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
 

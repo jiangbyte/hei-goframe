@@ -17,14 +17,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var ctx = context.Background()
-
 // ---------------------------------------------------------------------------
 // Dict CRUD
 // ---------------------------------------------------------------------------
 
 // DictPage returns a paginated list of dictionary records.
 func DictPage(c *gin.Context, param *DictPageParam) gin.H {
+	ctx := context.Background()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -68,6 +67,7 @@ func DictPage(c *gin.Context, param *DictPageParam) gin.H {
 
 // DictList returns all dictionary records matching the given filters.
 func DictList(c *gin.Context, param *DictListParam) []*DictVO {
+	ctx := context.Background()
 	query := db.Client.SysDict.Query().Order(sysdict.BySortCode())
 
 	if param.ParentID != "" {
@@ -91,6 +91,7 @@ func DictList(c *gin.Context, param *DictListParam) []*DictVO {
 
 // DictTree returns the dictionary tree structure.
 func DictTree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
+	ctx := context.Background()
 	query := db.Client.SysDict.Query().Order(sysdict.BySortCode())
 	if param.Category != "" {
 		query = query.Where(sysdict.CategoryEQ(param.Category))
@@ -134,6 +135,7 @@ func DictTree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
 
 // DictCreate creates a new dictionary record.
 func DictCreate(c *gin.Context, vo *DictVO, userID string) {
+	ctx := context.Background()
 	now := time.Now()
 
 	parentID := "0"
@@ -180,6 +182,7 @@ func DictCreate(c *gin.Context, vo *DictVO, userID string) {
 
 // DictModify updates an existing dictionary record.
 func DictModify(c *gin.Context, vo *DictVO, userID string) {
+	ctx := context.Background()
 	if vo.ID == "" {
 		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
@@ -254,6 +257,7 @@ func DictModify(c *gin.Context, vo *DictVO, userID string) {
 
 // DictRemove deletes dictionary records by IDs, including all descendants.
 func DictRemove(c *gin.Context, ids []string) {
+	ctx := context.Background()
 	if len(ids) == 0 {
 		return
 	}
@@ -270,6 +274,7 @@ func DictRemove(c *gin.Context, ids []string) {
 
 // DictDetail returns a single dictionary record by ID.
 func DictDetail(c *gin.Context, id string) *DictVO {
+	ctx := context.Background()
 	if id == "" {
 		return nil
 	}
@@ -287,6 +292,7 @@ func DictDetail(c *gin.Context, id string) *DictVO {
 
 // DictGetLabel looks up a dictionary label by typeCode and value.
 func DictGetLabel(c *gin.Context, typeCode, value string) gin.H {
+	ctx := context.Background()
 	root, err := db.Client.SysDict.Query().
 		Where(sysdict.CodeEQ(typeCode)).
 		First(ctx)
@@ -323,6 +329,7 @@ func DictGetLabel(c *gin.Context, typeCode, value string) gin.H {
 
 // DictGetChildren returns the direct children of a dictionary root identified by typeCode.
 func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
+	ctx := context.Background()
 	root, err := db.Client.SysDict.Query().
 		Where(sysdict.CodeEQ(typeCode)).
 		First(ctx)
@@ -354,6 +361,7 @@ func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
 
 // syncDictCache rebuilds the dictionary cache in Redis.
 func syncDictCache() {
+	ctx := context.Background()
 	all, err := db.Client.SysDict.Query().Order(sysdict.BySortCode()).All(ctx)
 	if err != nil {
 		return
@@ -421,6 +429,7 @@ func syncDictCache() {
 
 // dictCheckDuplicate checks for duplicate label or value under the same parent.
 func dictCheckDuplicate(parentID string, label, value *string, excludeID string) {
+	ctx := context.Background()
 	if label != nil && *label != "" {
 		cnt, err := db.Client.SysDict.Query().
 			Where(sysdict.ParentID(parentID)).
@@ -466,6 +475,7 @@ func dictCheckDuplicate(parentID string, label, value *string, excludeID string)
 // dictCheckCircularParent panics if setting newParentID as the parent of entityID
 // would create a circular reference.
 func dictCheckCircularParent(entityID, newParentID string) {
+	ctx := context.Background()
 	if newParentID == "" || newParentID == "0" || entityID == "" {
 		return
 	}
@@ -494,6 +504,7 @@ func dictCheckCircularParent(entityID, newParentID string) {
 // dictCollectDescendantIDs gathers all IDs that are the given IDs or any of their
 // descendants recursively.
 func dictCollectDescendantIDs(ids []string) []string {
+	ctx := context.Background()
 	all, err := db.Client.SysDict.Query().All(ctx)
 	if err != nil {
 		return ids

@@ -38,5 +38,6 @@ func InitRedis() error {
 func CloseRedis() {
 	if Redis != nil {
 		Redis.Close()
+		Redis = nil
 	}
 }

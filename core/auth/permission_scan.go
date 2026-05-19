@@ -4,11 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"sort"
 	"strings"
 
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
 )
+
+// permissionCacheTTL is the TTL for the Redis permission cache.
+// 0 means no expiration — cache is rebuilt only at server startup.
+const permissionCacheTTL = 0
 
 // PermissionEntry represents a scanned permission entry.
 type PermissionEntry struct {
@@ -45,7 +50,7 @@ func RunPermissionScan() error {
 	}
 
 	ctx := context.Background()
-	if err := db.Redis.Set(ctx, constants.PERMISSION_CACHE_KEY, string(data), 0).Err(); err != nil {
+	if err := db.Redis.Set(ctx, constants.PERMISSION_CACHE_KEY, string(data), permissionCacheTTL).Err(); err != nil {
 		log.Printf("[PermissionScan] Failed to store permission cache in Redis: %v", err)
 		return err
 	}
@@ -82,7 +87,7 @@ func GetModulesFromRedis() ([]string, error) {
 	for module := range tree {
 		modules = append(modules, module)
 	}
-	sortStrings(modules)
+	sort.Strings(modules)
 	return modules, nil
 }
 
@@ -142,13 +147,4 @@ func buildModuleTree(permissions []PermissionEntry) map[string]map[string]Permis
 		tree[module][entry.Code] = entry
 	}
 	return tree
-}
-
-// sortStrings sorts a slice of strings in place (simple insertion sort to avoid importing sort).
-func sortStrings(s []string) {
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && s[j-1] > s[j]; j-- {
-			s[j-1], s[j] = s[j], s[j-1]
-		}
-	}
 }

@@ -16,10 +16,9 @@ import (
 	syslog "hei-gin/ent/gen/syslog"
 )
 
-var ctx = context.Background()
-
 // Page returns a paginated list of SysLog records excluding large fields.
 func Page(c *gin.Context, param *LogPageParam) gin.H {
+	ctx := context.Background()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -86,6 +85,7 @@ func Page(c *gin.Context, param *LogPageParam) gin.H {
 
 // Detail returns a single SysLog record by ID including all fields.
 func Detail(c *gin.Context, id string) *LogVO {
+	ctx := context.Background()
 	entity, err := db.Client.SysLog.Get(ctx, id)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -98,6 +98,7 @@ func Detail(c *gin.Context, id string) *LogVO {
 
 // Create inserts a new SysLog record.
 func Create(c *gin.Context, vo *LogVO, userID string) {
+	ctx := context.Background()
 	now := time.Now()
 
 	create := db.Client.SysLog.Create().
@@ -151,6 +152,7 @@ func Create(c *gin.Context, vo *LogVO, userID string) {
 
 // Modify updates an existing SysLog record.
 func Modify(c *gin.Context, vo *LogVO, userID string) {
+	ctx := context.Background()
 	// Check existence
 	_, err := db.Client.SysLog.Get(ctx, vo.ID)
 	if err != nil {
@@ -206,6 +208,7 @@ func Modify(c *gin.Context, vo *LogVO, userID string) {
 
 // Remove deletes SysLog records by the given ids.
 func Remove(c *gin.Context, ids []string) {
+	ctx := context.Background()
 	_, err := db.Client.SysLog.Delete().
 		Where(syslog.IDIn(ids...)).
 		Exec(ctx)
@@ -216,6 +219,7 @@ func Remove(c *gin.Context, ids []string) {
 
 // DeleteByCategory deletes all SysLog records matching the given category.
 func DeleteByCategory(c *gin.Context, param *LogDeleteByCategoryParam) {
+	ctx := context.Background()
 	_, err := db.Client.SysLog.Delete().
 		Where(syslog.CategoryEQ(param.Category)).
 		Exec(ctx)
@@ -226,6 +230,7 @@ func DeleteByCategory(c *gin.Context, param *LogDeleteByCategoryParam) {
 
 // VisLineChart returns daily LOGIN/LOGOUT counts for the last 7 days.
 func VisLineChart(c *gin.Context) *BarChartData {
+	ctx := context.Background()
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
 
@@ -274,6 +279,7 @@ func VisLineChart(c *gin.Context) *BarChartData {
 
 // VisPieChart returns total LOGIN and LOGOUT counts.
 func VisPieChart(c *gin.Context) *PieChartData {
+	ctx := context.Background()
 	loginTotal, err := db.Client.SysLog.Query().
 		Where(syslog.CategoryEQ("LOGIN")).
 		Count(ctx)
@@ -298,6 +304,7 @@ func VisPieChart(c *gin.Context) *PieChartData {
 
 // OpBarChart returns daily OPERATE/EXCEPTION counts for the last 7 days.
 func OpBarChart(c *gin.Context) *BarChartData {
+	ctx := context.Background()
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
 
@@ -346,6 +353,7 @@ func OpBarChart(c *gin.Context) *BarChartData {
 
 // OpPieChart returns total OPERATE and EXCEPTION counts.
 func OpPieChart(c *gin.Context) *PieChartData {
+	ctx := context.Background()
 	operateTotal, err := db.Client.SysLog.Query().
 		Where(syslog.CategoryEQ("OPERATE")).
 		Count(ctx)

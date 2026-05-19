@@ -20,8 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var ctx = context.Background()
-
 // entToVO converts an ent SysRole entity to a RoleVO.
 func entToVO(entity *ent.SysRole) *RoleVO {
 	if entity == nil {
@@ -54,6 +52,7 @@ func formatTime(t *time.Time) string {
 
 // RolePage returns a paginated list of roles.
 func RolePage(c *gin.Context, param *RolePageParam) gin.H {
+	ctx := context.Background()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -87,6 +86,7 @@ func RolePage(c *gin.Context, param *RolePageParam) gin.H {
 
 // RoleCreate creates a new role.
 func RoleCreate(c *gin.Context, vo *RoleVO, userID string) {
+	ctx := context.Background()
 	now := time.Now()
 
 	builder := db.Client.SysRole.Create().
@@ -119,6 +119,7 @@ func RoleCreate(c *gin.Context, vo *RoleVO, userID string) {
 
 // RoleModify updates an existing role.
 func RoleModify(c *gin.Context, vo *RoleVO, userID string) {
+	ctx := context.Background()
 	if vo.ID == "" {
 		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
@@ -161,6 +162,7 @@ func RoleModify(c *gin.Context, vo *RoleVO, userID string) {
 
 // RoleRemove deletes roles by IDs.
 func RoleRemove(c *gin.Context, ids []string) {
+	ctx := context.Background()
 	if len(ids) == 0 {
 		return
 	}
@@ -203,6 +205,7 @@ func RoleRemove(c *gin.Context, ids []string) {
 
 // RoleDetail returns a single role by ID.
 func RoleDetail(c *gin.Context, id string) *RoleVO {
+	ctx := context.Background()
 	if id == "" {
 		return nil
 	}
@@ -220,6 +223,7 @@ func RoleDetail(c *gin.Context, id string) *RoleVO {
 
 // RoleGrantPermissions grants permissions to a role by replacing all existing permissions.
 func RoleGrantPermissions(c *gin.Context, roleID string, permissions []PermissionItem, userID string) {
+	ctx := context.Background()
 	// Delete existing permissions
 	_, err := db.Client.RelRolePermission.Delete().
 		Where(relrolepermission.RoleID(roleID)).
@@ -252,6 +256,7 @@ func RoleGrantPermissions(c *gin.Context, roleID string, permissions []Permissio
 
 // RoleGrantResources grants resources to a role, and auto-adds missing button permissions.
 func RoleGrantResources(c *gin.Context, roleID string, resourceIDs []string, permissions []ButtonPermissionScope) {
+	ctx := context.Background()
 	// Deduplicate resource IDs
 	dedupMap := make(map[string]struct{})
 	for _, id := range resourceIDs {
@@ -336,6 +341,7 @@ func RoleGrantResources(c *gin.Context, roleID string, resourceIDs []string, per
 
 // RoleOwnPermissionCodes returns the permission codes owned by a role.
 func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
+	ctx := context.Background()
 	perms, err := db.Client.RelRolePermission.Query().
 		Where(relrolepermission.RoleID(roleID)).
 		Select(relrolepermission.FieldPermissionCode).
@@ -353,6 +359,7 @@ func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
 
 // RoleOwnPermissionDetails returns detailed permission info (code, scope, custom fields) for a role.
 func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
+	ctx := context.Background()
 	perms, err := db.Client.RelRolePermission.Query().
 		Where(relrolepermission.RoleID(roleID)).
 		All(ctx)
@@ -375,6 +382,7 @@ func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interf
 
 // RoleOwnResourceIDs returns the resource IDs owned by a role.
 func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
+	ctx := context.Background()
 	resources, err := db.Client.RelRoleResource.Query().
 		Where(relroleresource.RoleID(roleID)).
 		Select(relroleresource.FieldResourceID).

@@ -18,7 +18,7 @@ func RegisterRoutes(r *gin.Engine) {
 		username.DoRegister,
 	)
 	r.POST("/api/v1/c/logout",
-		middleware.HeiClientCheckLogin(),
+		middleware.HeiCheckLogin("CONSUMER"),
 		username.DoLogout,
 	)
 }

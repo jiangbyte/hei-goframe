@@ -19,6 +19,16 @@ func HeiCheckRole(roles []string, mode ...string) gin.HandlerFunc {
 	return heiCheckRoleInner("BUSINESS", roles, m)
 }
 
+// HeiClientCheckRole returns a middleware that checks the CONSUMER user has the required roles.
+// mode defaults to "AND" (all roles required). Pass "OR" for any role.
+func HeiClientCheckRole(roles []string, mode ...string) gin.HandlerFunc {
+	m := "AND"
+	if len(mode) > 0 {
+		m = mode[0]
+	}
+	return heiCheckRoleInner("CONSUMER", roles, m)
+}
+
 // heiCheckRoleInner is a shared implementation for both BUSINESS and CONSUMER role checks.
 func heiCheckRoleInner(loginType string, roles []string, mode string) gin.HandlerFunc {
 	return func(c *gin.Context) {

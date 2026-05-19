@@ -1,8 +1,14 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -63,9 +69,34 @@ func Run() {
 	// 13. Run permission scan
 	auth.RunPermissionScan()
 
-	// 14. Start HTTP server
+	// 14. Start HTTP server with graceful shutdown
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
-	if err := r.Run(addr); err != nil {
-		log.Fatalf("[APP] Failed to start server: %v", err)
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: r,
 	}
+
+	go func() {
+		log.Printf("[APP] Server started on %s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[APP] Failed to start server: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("[APP] Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("[APP] Server forced to shutdown: %v", err)
+	}
+
+	db.Close()
+	db.CloseRedis()
+	log.Println("[APP] Server exited")
 }

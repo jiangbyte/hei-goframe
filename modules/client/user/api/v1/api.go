@@ -43,13 +43,13 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// GET /api/v1/client-user/current
 	r.GET("/api/v1/client-user/current",
-		middleware.HeiClientCheckLogin(),
+		middleware.HeiCheckLogin("CONSUMER"),
 		currentHandler,
 	)
 
 	// POST /api/v1/client-user/update-profile
 	r.POST("/api/v1/client-user/update-profile",
-		middleware.HeiClientCheckLogin(),
+		middleware.HeiCheckLogin("CONSUMER"),
 		log.SysLog("C端用户更新个人信息"),
 		middleware.NoRepeat(3000),
 		updateProfileHandler,
@@ -57,14 +57,14 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/client-user/update-avatar
 	r.POST("/api/v1/client-user/update-avatar",
-		middleware.HeiClientCheckLogin(),
+		middleware.HeiCheckLogin("CONSUMER"),
 		log.SysLog("C端用户更新头像"),
 		updateAvatarHandler,
 	)
 
 	// POST /api/v1/client-user/update-password
 	r.POST("/api/v1/client-user/update-password",
-		middleware.HeiClientCheckLogin(),
+		middleware.HeiCheckLogin("CONSUMER"),
 		log.SysLog("C端用户修改密码"),
 		middleware.NoRepeat(3000),
 		updatePasswordHandler,

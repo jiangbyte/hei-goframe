@@ -29,3 +29,8 @@ func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// HeiClientCheckLogin returns a middleware that checks if the CONSUMER user is logged in.
+func HeiClientCheckLogin() gin.HandlerFunc {
+	return HeiCheckLogin("CONSUMER")
+}

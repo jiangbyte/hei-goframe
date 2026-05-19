@@ -44,5 +44,6 @@ func InitEnt() error {
 func Close() {
 	if Client != nil {
 		Client.Close()
+		Client = nil
 	}
 }
